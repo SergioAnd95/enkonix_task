@@ -1,5 +1,5 @@
 from django.db import models
-from django.db.models import Subquery, OuterRef
+from django.db.models import Subquery, OuterRef, Q
 
 
 class StockRecord(models.Model):
@@ -17,9 +17,9 @@ class ProductQuerySet(models.QuerySet):
 
     def annotate_lowest_price(self):
         stock_records = StockRecord.objects.filter(
-            product=OuterRef("pk"),
-            quantity__gte=5,
-        ).order_by("id")
+            Q(product=OuterRef("pk"), on_sale=True),
+            Q(quantity__gte=5) | Q(has_infinite_quantity=True)
+        ).order_by("-id")
 
         return self.annotate(
             lowest_price=Subquery(stock_records.values("price")[:1]))
